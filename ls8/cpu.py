@@ -2,6 +2,10 @@
 
 import sys
 
+LDI = 0b10000010
+PRN = 0b01000111
+HLT = 0b00000001
+
 class CPU:
     """Main CPU class."""
 
@@ -10,7 +14,7 @@ class CPU:
         self.ram = [0] * 256
         self.reg = [0] * 8
         self.pc = 0
-        self.address = 0
+        self.mar = 0
 
     def load(self):
         """Load a program into memory."""
@@ -66,29 +70,29 @@ class CPU:
     def ram_read(self, index):
         return self.ram[index]
 
-    def ram_write(self, data):
-        self.ram[self.address] = data
-        self.address += 1
+    def ram_write(self, value):
+        self.ram[self.mar] = value
+        self.mar += 1
 
     def run(self):
         """Run the CPU."""
         halted = False
         while not halted:
             instruction = self.ram[self.pc]
+            instance_pc = self.pc
             operands = instruction >> 6
+            self.pc += operands + 1
 
-            if instruction == 0b10000010: #LDI
-                reg_address = self.ram[self.pc + 1]
-                reg_value = self.ram[self.pc + 2]
+            if instruction == LDI:
+                reg_address = self.ram[instance_pc + 1]
+                reg_value = self.ram[instance_pc + 2]
                 self.reg[reg_address] = reg_value
-                self.pc += operands + 1
 
-            elif instruction == 0b01000111: #PRN
-                reg_address = self.ram[self.pc + 1]
+            elif instruction == PRN:
+                reg_address = self.ram[instance_pc + 1]
                 print(self.reg[reg_address])
-                self.pc += operands + 1
 
-            elif instruction == 0b00000001: #HLT
+            elif instruction == HLT:
                 halted = True
             else:
                 print('Unknown instruction')
