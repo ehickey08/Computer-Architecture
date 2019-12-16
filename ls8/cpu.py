@@ -2,9 +2,9 @@
 
 import sys
 
-LDI = 0b10000010
-PRN = 0b01000111
-HLT = 0b00000001
+LDI = 0b0010
+PRN = 0b0111
+HLT = 0b0001
 
 class CPU:
     """Main CPU class."""
@@ -78,9 +78,9 @@ class CPU:
         """Run the CPU."""
         halted = False
         while not halted:
-            instruction = self.ram[self.pc]
+            instruction = self.ram[self.pc] & 0b1111
             instance_pc = self.pc
-            operands = instruction >> 6
+            operands = self.ram[self.pc] >> 6
             self.pc += operands + 1
 
             if instruction == LDI:
