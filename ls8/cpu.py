@@ -29,13 +29,12 @@ class CPU:
     def load(self, program):
         """Load a program into memory."""
         address = 0
-        f = open(f"examples/{program}.ls8", 'r')
-        for line in f:
-            instruction = re.match(r"(\d+)(?=\D)", line)
-            if instruction:
-                self.ram_write(int(instruction[0], 2), address)
-                address += 1
-        f.close()
+        with open(f"examples/{program}.ls8", 'r') as f:
+            for line in f:
+                if instruction := re.match(r"(\d+)(?=\D)", line):
+                    self.ram_write(int(instruction[0], 2), address)
+                    address += 1
+
 
     def alu(self, op, reg_a, reg_b):
         """ALU operations."""
@@ -95,7 +94,7 @@ class CPU:
         """Run the CPU."""
         halted = False
         while not halted:
-            self.ir = self.ram[self.pc]
+            self.ir = self.ram_read(self.pc)
             if self.ir in self.op_table:
                 self.op_table[self.ir](self.pc)
                 operands = self.ram[self.pc] >> 6
