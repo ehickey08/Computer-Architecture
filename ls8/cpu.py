@@ -15,16 +15,13 @@ class CPU:
     def __init__(self):
         """Construct a new CPU."""
         self.op_table = {
-            MUL: self.mul,
-            LDI: self.ldi,
-            PRN: self.prn,
+            MUL: lambda a, b: self.alu('MUL', a, b),
+            LDI: lambda a, b: self.reg_write(a, b),
+            PRN: lambda a, b: print(self.reg[a]),
         }
         self.ram = [0] * 256
         self.reg = [0] * 8
-        self.pc = 0
-        self.mar = 0
-        self.mdr = 0
-        self.ir = 0
+        self.PC = 0
 
     def load(self, program):
         """Load a program into memory."""
@@ -32,9 +29,8 @@ class CPU:
         with open(f"examples/{program}.ls8", 'r') as f:
             for line in f:
                 if instruction := re.match(r"(\d+)(?=\D)", line):
-                    self.ram_write(int(instruction[0], 2), address)
+                    self.ram_write(address, int(instruction[0], 2))
                     address += 1
-
 
     def alu(self, op, reg_a, reg_b):
         """ALU operations."""
@@ -53,12 +49,12 @@ class CPU:
         """
 
         print(f"TRACE: %02X | %02X %02X %02X |" % (
-            self.pc,
+            self.PC,
             # self.fl,
             # self.ie,
-            self.ram_read(self.pc),
-            self.ram_read(self.pc + 1),
-            self.ram_read(self.pc + 2)
+            self.ram_read(self.PC),
+            self.ram_read(self.PC + 1),
+            self.ram_read(self.PC + 2)
         ), end='')
 
         for i in range(8):
@@ -66,40 +62,28 @@ class CPU:
 
         print()
 
-    def ram_read(self, index):
-        self.mar = index
-        self.mdr = self.ram[self.mar]
-        return self.mdr
+    def ram_read(self, mar):
+        return self.ram[mar]
 
-    def ram_write(self, value, index):
-        self.mar = index
-        self.mdr = value
-        self.ram[self.mar] = self.mdr
+    def ram_write(self, mar, mdr):
+        self.ram[mar] = mdr
 
-    def ldi(self, pc):
-        reg_address = self.ram_read(pc + 1)
-        reg_value = self.ram_read(pc + 2)
-        self.reg[reg_address] = reg_value
-
-    def prn(self, pc):
-        reg_address = self.ram_read(pc + 1)
-        print(self.reg[reg_address])
-
-    def mul(self, pc):
-        reg_a = self.ram_read(pc + 1)
-        reg_b = self.ram_read(pc + 2)
-        self.alu('MUL', reg_a, reg_b)
+    def reg_write(self, register, value):
+        self.reg[register] = value
 
     def run(self):
         """Run the CPU."""
         halted = False
         while not halted:
-            self.ir = self.ram_read(self.pc)
-            if self.ir in self.op_table:
-                self.op_table[self.ir](self.pc)
-                operands = self.ram[self.pc] >> 6
-                self.pc += operands + 1
-            elif self.ir == HLT:
+            IR = self.ram_read(self.PC)
+            operand_a = self.ram_read(self.PC + 1)
+            operand_b = self.ram_read(self.PC + 2)
+
+            if IR in self.op_table:
+                self.op_table[IR](operand_a, operand_b)
+                operands = self.ram[self.PC] >> 6
+                self.PC += operands + 1
+            elif IR == HLT:
                 halted = True
             else:
                 print('Unknown instruction')
