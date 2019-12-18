@@ -7,6 +7,9 @@ LDI = 0b10000010
 PRN = 0b01000111
 HLT = 0b00000001
 MUL = 0b10100010
+POP = 0b01000110
+PUSH= 0b01000101
+
 
 
 class CPU:
@@ -18,10 +21,15 @@ class CPU:
             MUL: lambda a, b: self.alu('MUL', a, b),
             LDI: lambda a, b: self.reg_write(a, b),
             PRN: lambda a, b: print(self.reg[a]),
+            POP: self.pop_stack,
+            PUSH: self.push_stack
         }
+        self.PC = 0
+        self.SP = 0xF4
         self.ram = [0] * 256
         self.reg = [0] * 8
-        self.PC = 0
+        self.reg[7] = self.SP
+
 
     def load(self, program):
         """Load a program into memory."""
@@ -70,6 +78,14 @@ class CPU:
 
     def reg_write(self, register, value):
         self.reg[register] = value
+
+    def pop_stack(self, reg_address, _):
+        self.reg[reg_address] = self.ram_read(self.SP)
+        self.SP += 1
+
+    def push_stack(self, reg_address, _):
+        self.SP -= 1
+        self.ram_write(self.SP, self.reg[reg_address])
 
     def run(self):
         """Run the CPU."""
