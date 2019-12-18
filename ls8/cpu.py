@@ -8,8 +8,7 @@ PRN = 0b01000111
 HLT = 0b00000001
 MUL = 0b10100010
 POP = 0b01000110
-PUSH= 0b01000101
-
+PUSH = 0b01000101
 
 
 class CPU:
@@ -29,7 +28,6 @@ class CPU:
         self.ram = [0] * 256
         self.reg = [0] * 8
         self.reg[7] = self.SP
-
 
     def load(self, program):
         """Load a program into memory."""
@@ -80,12 +78,12 @@ class CPU:
         self.reg[register] = value
 
     def pop_stack(self, reg_address, _):
-        self.reg[reg_address] = self.ram_read(self.SP)
-        self.SP += 1
+        self.reg[reg_address] = self.ram_read(self.reg[7])
+        self.reg[7] += 1
 
     def push_stack(self, reg_address, _):
-        self.SP -= 1
-        self.ram_write(self.SP, self.reg[reg_address])
+        self.reg[7] -= 1
+        self.ram_write(self.reg[7], self.reg[reg_address])
 
     def run(self):
         """Run the CPU."""
