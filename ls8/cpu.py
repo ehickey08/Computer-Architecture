@@ -8,6 +8,8 @@ PRN = 0b01000111
 HLT = 0b00000001
 MUL = 0b10100010
 ADD = 0b10100000
+AND = 0b10101000
+CMP = 0b10100111
 POP = 0b01000110
 PUSH = 0b01000101
 CALL = 0b01010000
@@ -21,7 +23,9 @@ class CPU:
         """Construct a new CPU."""
         self.op_table = {
             MUL: lambda a, b: self.alu('MUL', a, b),
-            ADD: lambda a,b : self.alu('ADD', a, b),
+            ADD: lambda a, b: self.alu('ADD', a, b),
+            AND: lambda a, b: self.alu('AND', a, b),
+            CMP: lambda a,b: self.alu('CMP', a, b),
             LDI: lambda a, b: self.reg_write(a, b),
             PRN: lambda a, b: print(self.reg[a]),
             POP: self.pop_stack,
@@ -30,9 +34,12 @@ class CPU:
             RET: self.ret
         }
         self.PC = 0
-        self.SP = 7
+        self.FL = 0
         self.ram = [0] * 256
         self.reg = [0] * 8
+        self.IM = 5
+        self.IS = 6
+        self.SP = 7
         self.reg[self.SP] = 0xF4
 
     def load(self, program):
@@ -46,11 +53,19 @@ class CPU:
 
     def alu(self, op, reg_a, reg_b):
         """ALU operations."""
-
         if op == "ADD":
             self.reg[reg_a] += self.reg[reg_b]
         elif op == 'MUL':
             self.reg[reg_a] *= self.reg[reg_b]
+        elif op == 'ADD':
+            self.reg[reg_a] = self.reg[reg_a] & self.reg[reg_b]
+        elif op == 'CMP':
+            if self.reg[reg_a] == self.reg[reg_b]:
+                self.FL = 0b00000001
+            elif self.reg[reg_a] < self.reg[reg_b]:
+                self.FL = 0b00000100
+            else:
+                self.FL = 0b00000010
         else:
             raise Exception("Unsupported ALU operation")
 
