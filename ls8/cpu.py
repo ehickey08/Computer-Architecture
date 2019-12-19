@@ -10,6 +10,9 @@ MUL = 0b10100010
 ADD = 0b10100000
 AND = 0b10101000
 CMP = 0b10100111
+DEC = 0b01100110
+DIV = 0b10100011
+INC = 0b01100101
 POP = 0b01000110
 PUSH = 0b01000101
 CALL = 0b01010000
@@ -26,6 +29,9 @@ class CPU:
             ADD: lambda a, b: self.alu('ADD', a, b),
             AND: lambda a, b: self.alu('AND', a, b),
             CMP: lambda a,b: self.alu('CMP', a, b),
+            DEC: lambda a,b: self.alu('DEC', a, b),
+            DIV: lambda a,b: self.alu('DIV', a, b),
+            INC: lambda a,b: self.alu('INC', a, b),
             LDI: lambda a, b: self.reg_write(a, b),
             PRN: lambda a, b: print(self.reg[a]),
             POP: self.pop_stack,
@@ -66,6 +72,12 @@ class CPU:
                 self.FL = 0b00000100
             else:
                 self.FL = 0b00000010
+        elif op == 'DEC':
+            self.reg[reg_a] -= 1
+        elif op == 'DIV':
+            self.reg[reg_a] /= self.reg[reg_b]
+        elif op == 'INC':
+            self.reg[reg_a] += 1
         else:
             raise Exception("Unsupported ALU operation")
 
