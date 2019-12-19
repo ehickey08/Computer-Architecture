@@ -7,8 +7,11 @@ LDI = 0b10000010
 PRN = 0b01000111
 HLT = 0b00000001
 MUL = 0b10100010
+ADD = 0b10100000
 POP = 0b01000110
 PUSH = 0b01000101
+CALL = 0b01010000
+RET = 0b00010001
 
 
 class CPU:
@@ -18,10 +21,13 @@ class CPU:
         """Construct a new CPU."""
         self.op_table = {
             MUL: lambda a, b: self.alu('MUL', a, b),
+            ADD: lambda a,b : self.alu('ADD', a, b),
             LDI: lambda a, b: self.reg_write(a, b),
             PRN: lambda a, b: print(self.reg[a]),
             POP: self.pop_stack,
-            PUSH: self.push_stack
+            PUSH: self.push_stack,
+            CALL: self.call,
+            RET: self.ret
         }
         self.PC = 0
         self.SP = 7
@@ -85,6 +91,15 @@ class CPU:
         self.reg[self.SP] -= 1
         self.ram_write(self.reg[self.SP], self.reg[reg_address])
 
+    def call(self, reg_address, *_args):
+        self.reg[self.SP] -= 1
+        self.ram_write(self.reg[self.SP], self.PC + 2)
+        self.PC = self.reg[reg_address]
+
+    def ret(self, *_args):
+        self.PC = self.ram_read(self.reg[self.SP])
+        self.reg[self.SP] += 1
+
     def run(self):
         """Run the CPU."""
         halted = False
@@ -95,8 +110,10 @@ class CPU:
 
             if IR in self.op_table:
                 self.op_table[IR](operand_a, operand_b)
-                operands = self.ram[self.PC] >> 6
-                self.PC += operands + 1
+                operands = IR >> 6
+                set_directly = (IR & 0b10000) >> 4
+                if not set_directly:
+                    self.PC += operands + 1
             elif IR == HLT:
                 halted = True
             else:
