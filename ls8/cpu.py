@@ -2,7 +2,7 @@
 
 import sys
 import re
-
+from datetime import datetime
 
 # Simple Start and Halt instructions
 LDI = 0b10000010
@@ -91,7 +91,7 @@ class CPU:
             SHR: lambda a, b: self.alu('SHR', a, b),
             # Stretch: Interrupts
             INT: lambda a, b: self.interrupt(a, b),
-            IRET: lambda a, b: self.inter_ret(a, b),
+            IRET: lambda a, b: self.inter_ret(),
             # Additional Commands
             # ---Comparing Logic---
             JGE: lambda a, b: self.comparator('ge', a),
@@ -102,7 +102,7 @@ class CPU:
             LD: lambda a, b: self.ld(a, b),
             ST: lambda a, b: self.st(a, b),
             # ---Print character
-            PRA: lambda a, b: print(chr(self.reg[a]), end='')
+            PRA: lambda a, b: print(chr(self.reg[a]))
         }
         self.PC = 0
         self.FL = 0
@@ -113,6 +113,7 @@ class CPU:
         self.SP = 7
         self.reg[self.SP] = 0xF4
         self.timer = 0
+        self.interrupts_allowed = True
 
     def load(self, program):
         """Load a program into memory."""
@@ -275,24 +276,59 @@ class CPU:
         self.ram_write(self.reg[reg_a], self.reg[reg_b])
 
     def check_interrupts(self):
-        pass
+        inter_vectors = {
+            0: 0xF8,
+            1: 0xF9,
+            2: 0xFA,
+            3: 0xFB,
+            4: 0xFC,
+            5: 0xFD,
+            6: 0xFE,
+            7: 0xFF
+        }
+        masked_interrupts = self.reg[self.IM] & self.reg[self.IS]
+        for i in range(8):
+            interrupt_happened = ((masked_interrupts >> i) & 1) == 1
+            if interrupt_happened:
+                self.interrupt_prep()
+                self.PC = self.ram_read(inter_vectors[i])
+                break;
 
-    def interrupt(self):
-        pass
+    def interrupt_prep(self):
+        self.interrupts_allowed = False
+        self.reg[self.IS] = 0
+        self.reg[self.SP] -= 1
+        self.ram_write(self.reg[self.SP], self.PC)
+        self.reg[self.SP] -= 1
+        self.ram_write(self.reg[self.SP], self.FL)
+        for i in range(7):
+            self.push_stack(i)
+
+    def interrupt(self, interrupt):
+        value = 0b1 << interrupt
+        self.reg[self.IS] = value
 
     def inter_ret(self):
-        pass
+        for i in range(6, -1, -1):
+            self.pop_stack(i)
+        self.FL = self.ram_read(self.reg[self.SP])
+        self.reg[self.SP] += 1
+        self.PC = self.ram_read(self.reg[self.SP])
+        self.reg[self.SP] += 1
+        self.interrupts_allowed = True
+        self.timer = datetime.now()
 
     def run(self):
         """Run the CPU."""
         halted = False
-        # self.timer = datetime.now()
+        self.timer = datetime.now()
         while not halted:
-            # new_time = datetime.now()
-            # if new_time - self.timer >= 1:
-            #     self.timer = new_time
-            #     self.reg[self.IS] = 0b1
-            self.check_interrupts()
+            if self.interrupts_allowed:
+                new_time = datetime.now()
+                if (new_time - self.timer).seconds >= 3:
+                    self.timer = new_time
+                    self.interrupt(0)
+                self.check_interrupts()
             IR = self.ram_read(self.PC)
             operand_a = self.ram_read(self.PC + 1)
             operand_b = self.ram_read(self.PC + 2)
