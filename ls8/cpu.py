@@ -3,6 +3,7 @@
 import sys
 import re
 from datetime import datetime
+import msvcrt
 
 # Simple Start and Halt instructions
 LDI = 0b10000010
@@ -111,6 +112,7 @@ class CPU:
         self.IM = 5
         self.IS = 6
         self.SP = 7
+        self.KEY = 0xF4
         self.reg[self.SP] = 0xF4
         self.timer = 0
         self.interrupts_allowed = True
@@ -328,6 +330,12 @@ class CPU:
                 if (new_time - self.timer).seconds >= 3:
                     self.timer = new_time
                     self.interrupt(0)
+                key_pressed = msvcrt.kbhit()
+                if key_pressed:
+                    key = msvcrt.getch().decode()
+                    code = ord(key)
+                    self.ram_write(self.KEY, code)
+                    self.interrupt(1)
                 self.check_interrupts()
             IR = self.ram_read(self.PC)
             operand_a = self.ram_read(self.PC + 1)
