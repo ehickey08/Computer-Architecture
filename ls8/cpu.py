@@ -3,6 +3,7 @@
 import sys
 import re
 
+
 # Simple Start and Halt instructions
 LDI = 0b10000010
 PRN = 0b01000111
@@ -76,7 +77,7 @@ class CPU:
             # ---Subroutines---
             CALL: lambda a, _: self.call(a),
             RET: lambda *_args: self.ret(),
-            # ---Sprint: Loop Logic
+            # Sprint: Loop Logic
             CMP: lambda a, b: self.alu('CMP', a, b),
             JMP: lambda a, _: self.set_pc(a),
             JEQ: lambda a, b: self.comparator('eq', a),
@@ -88,13 +89,19 @@ class CPU:
             NOT: lambda a, b: self.alu('NOT', a, b),
             SHL: lambda a, b: self.alu('SHL', a, b),
             SHR: lambda a, b: self.alu('SHR', a, b),
+            # Stretch: Interrupts
+            INT: lambda a, b: self.interrupt(a, b),
+            IRET: lambda a, b: self.inter_ret(a, b),
             # Additional Commands
+            # ---Comparing Logic---
             JGE: lambda a, b: self.comparator('ge', a),
             JGT: lambda a, b: self.comparator('gt', a),
             JLE: lambda a, b: self.comparator('le', a),
             JLT: lambda a, b: self.comparator('lt', a),
+            # ---Memory write/read
             LD: lambda a, b: self.ld(a, b),
             ST: lambda a, b: self.st(a, b),
+            # ---Print character
             PRA: lambda a, b: print(chr(self.reg[a]), end='')
         }
         self.PC = 0
@@ -105,6 +112,7 @@ class CPU:
         self.IS = 6
         self.SP = 7
         self.reg[self.SP] = 0xF4
+        self.timer = 0
 
     def load(self, program):
         """Load a program into memory."""
@@ -267,24 +275,24 @@ class CPU:
         self.ram_write(self.reg[reg_a], self.reg[reg_b])
 
     def check_interrupts(self):
-        maskedInterrupts = self.reg[self.IM] & self.reg[self.IS]
-        MI_str = f"{maskedInterrupts:08b}"
-        set_bit = None
-        for i in range(7, -1, -1):
-            if MI_str[i]:
-                set_bit = i
-                break
-        if set_bit is not None:
-            self.reg[self.IS]
-            self.push_stack(self.PC)
-            self.push_stack(self.FL)
-            for i in range(7):
-                self.push_stack(self.reg[i])
+        pass
+
+    def interrupt(self):
+        pass
+
+    def inter_ret(self):
+        pass
 
     def run(self):
         """Run the CPU."""
         halted = False
+        # self.timer = datetime.now()
         while not halted:
+            # new_time = datetime.now()
+            # if new_time - self.timer >= 1:
+            #     self.timer = new_time
+            #     self.reg[self.IS] = 0b1
+            self.check_interrupts()
             IR = self.ram_read(self.PC)
             operand_a = self.ram_read(self.PC + 1)
             operand_b = self.ram_read(self.PC + 2)
