@@ -293,24 +293,31 @@ class CPU:
             interrupt_happened = ((masked_interrupts >> i) & 1) == 1
             if interrupt_happened:
                 self.interrupt_prep()
+                # move PC for cpu.run to go to interrupt handler
                 self.PC = self.ram_read(inter_vectors[i])
                 break;
 
     def interrupt_prep(self):
+        '''Preps cpu to handle the interruption by storing data'''
         self.interrupts_allowed = False
         self.reg[self.IS] = 0
+        # store PC
         self.reg[self.SP] -= 1
         self.ram_write(self.reg[self.SP], self.PC)
+        # store FL
         self.reg[self.SP] -= 1
         self.ram_write(self.reg[self.SP], self.FL)
+        # store registers 0-6
         for i in range(7):
             self.push_stack(i)
 
     def interrupt(self, interrupt):
+        '''Manually trigge an interruption from within cpu.run'''
         value = 0b1 << interrupt
         self.reg[self.IS] = value
 
     def inter_ret(self):
+        '''IRET occurs. Restore previously saved data'''
         for i in range(6, -1, -1):
             self.pop_stack(i)
         self.FL = self.ram_read(self.reg[self.SP])
@@ -324,19 +331,25 @@ class CPU:
         """Run the CPU."""
         halted = False
         self.timer = datetime.now()
+
         while not halted:
+            # see if currently handling another interruption
             if self.interrupts_allowed:
                 new_time = datetime.now()
+                # check for timer interrupt
                 if (new_time - self.timer).seconds >= 3:
                     self.timer = new_time
                     self.interrupt(0)
                 key_pressed = msvcrt.kbhit()
+                # check for keyboard interrupt
                 if key_pressed:
                     key = msvcrt.getch().decode()
                     code = ord(key)
                     self.ram_write(self.KEY, code)
                     self.interrupt(1)
+                # check IS register for interrupts
                 self.check_interrupts()
+
             IR = self.ram_read(self.PC)
             operand_a = self.ram_read(self.PC + 1)
             operand_b = self.ram_read(self.PC + 2)
