@@ -95,7 +95,7 @@ class CPU:
             JLT: lambda a, b: self.comparator('lt', a),
             LD: lambda a, b: self.ld(a, b),
             ST: lambda a, b: self.st(a, b),
-            PRA: lambda a, b: print(chr(a))
+            PRA: lambda a, b: print(chr(self.reg[a]), end='')
         }
         self.PC = 0
         self.FL = 0
